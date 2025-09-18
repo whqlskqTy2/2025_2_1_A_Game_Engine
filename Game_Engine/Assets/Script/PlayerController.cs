@@ -1,58 +1,86 @@
+ï»¿using Cinemachine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    // ÀÌµ¿ ¼Óµµ
     public float speed = 5f;
-
-    // Á¡ÇÁ Èû
+    public float runSpeed = 10f;
     public float jumpPower = 5f;
-
-    // Áß·Â °ª
     public float gravity = -9.81f;
 
-    // Ä³¸¯ÅÍ ÄÁÆ®·Ñ·¯ ÄÄÆ÷³ÍÆ®
-    private CharacterController controller;
+    public CharacterController controller;
+    public float rotationSpeed = 10f;
 
-    // ÇöÀç ¼Óµµ (Æ¯È÷ yÃà Á¡ÇÁ/³«ÇÏ¿ë)
+    private CinemachinePOV pov;
+    public CinemachineVirtualCamera virtualCam;
+
     private Vector3 velocity;
-
-    // ¶¥¿¡ ´ê¾Æ ÀÖ´ÂÁö ¿©ºÎ
     private bool isGrounded;
+
+    // â¬‡ï¸ FreeLook ëª¨ë“œ ìƒíƒœë¥¼ ì•Œê¸° ìœ„í•´ ìŠ¤ìœ„ì²˜ ì°¸ì¡°
+    [SerializeField] private CinemacineSwither camSwitcher;
 
     void Start()
     {
-        // ½ÃÀÛÇÒ ¶§ CharacterController ÄÄÆ÷³ÍÆ®¸¦ °¡Á®¿È
         controller = GetComponent<CharacterController>();
+        if (virtualCam != null)
+            pov = virtualCam.GetCinemachineComponent<CinemachinePOV>();
+
+        // ì¸ìŠ¤í™í„°ì—ì„œ ì•ˆ ê½‚ì•„ë’€ìœ¼ë©´ ìë™ ê²€ìƒ‰
+        if (camSwitcher == null)
+            camSwitcher = FindObjectOfType<CinemacineSwither>();
     }
 
     void Update()
     {
-        // ¶¥¿¡ ´ê¾Æ ÀÖ´ÂÁö Ã¼Å©
         isGrounded = controller.isGrounded;
+        if (isGrounded && velocity.y < 0f)
+            velocity.y = -2f; // ì§€ë©´ì— ì‚´ì§ ë¶™ì„
 
-        // Å°º¸µå ÀÔ·Â (WASD ¶Ç´Â ¹æÇâÅ°) ¹Ş±â
+        //  FreeLook ëª¨ë“œì¼ ë•Œ: ì´ë™/íšŒì „/ì í”„ ì „ë¶€ ì°¨ë‹¨
+        if (camSwitcher != null && camSwitcher.usingFreeLook)
+        {
+            // ìˆ˜í‰ ì†ë„ ì œê±°, íšŒì „/ì…ë ¥ ë¬´ì‹œ
+            velocity.x = 0f;
+            velocity.z = 0f;
+
+            // ê³µì¤‘ì´ë©´ ì¤‘ë ¥ë§Œ ì ìš©í•´ì„œ ìì—°ìŠ¤ëŸ¬ìš´ ë‚™í•˜ ìœ ì§€
+            if (!isGrounded)
+                velocity.y += gravity * Time.deltaTime;
+
+            // ìˆ˜ì§ ì´ë™ë§Œ ë°˜ì˜
+            controller.Move(new Vector3(0f, velocity.y, 0f) * Time.deltaTime);
+            return;
+        }
+
+        //  ì´í•˜ ì¼ë°˜ ì¡°ì‘
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
 
-        // ÀÌµ¿ ¹æÇâ (x, zÃà¸¸ °í·Á)
-        Vector3 move = new Vector3(x, 0, z);
+        // ì¹´ë©”ë¼ ê¸°ì¤€ ì´ë™ ë²¡í„°
+        Vector3 camForward = virtualCam.transform.forward; camForward.y = 0f; camForward.Normalize();
+        Vector3 camRight = virtualCam.transform.right; camRight.y = 0f; camRight.Normalize();
+        Vector3 move = (camForward * z + camRight * x).normalized;
 
-        // ÀÌµ¿ Ã³¸® (¼Óµµ * ½Ã°£ º¸Á¤)
-        controller.Move(move * speed * Time.deltaTime);
+        float currentSpeed = Input.GetKey(KeyCode.LeftShift) ? runSpeed : speed;
+        controller.Move(move * currentSpeed * Time.deltaTime);
 
-        // Á¡ÇÁ ÀÔ·Â Ã³¸® (½ºÆäÀÌ½º¹Ù)
-        if (isGrounded && Input.GetKeyDown(KeyCode.Space))
+        // ì¹´ë©”ë¼ yaw ê¸°ì¤€ìœ¼ë¡œ í”Œë ˆì´ì–´ íšŒì „
+        if (pov != null)
         {
-            velocity.y = jumpPower; // Á¡ÇÁ ½Ã y¼Óµµ ¼³Á¤
+            float cameraYaw = pov.m_HorizontalAxis.Value;
+            Quaternion targetRot = Quaternion.Euler(0f, cameraYaw, 0f);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
         }
 
-        // Áß·Â Àû¿ë
-        velocity.y += gravity * Time.deltaTime;
+        // ì í”„
+        if (isGrounded && Input.GetKeyDown(KeyCode.Space))
+            velocity.y = jumpPower;
 
-        // Áß·Â/Á¡ÇÁ Æ÷ÇÔ ÃÖÁ¾ ÀÌµ¿
+        // ì¤‘ë ¥
+        velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
     }
 }
