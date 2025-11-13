@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5131532022016537312}
   - component: {fileID: 8795326954538990631}
   - component: {fileID: 655442777029982986}
+  - component: {fileID: 7977134857792680021}
   m_Layer: 0
   m_Name: Gress
   m_TagString: Untagged
@@ -105,3 +106,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &7977134857792680021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 990729841849609508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cf36157414249a4cb0f091f8ab79bf5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 1
+  maxHP: 1
+  hp: 0
+  dropCount: 1
+  mineable: 1
